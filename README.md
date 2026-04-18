@@ -62,22 +62,23 @@ They're not mutually exclusive. You can journal in Jeff's vault for long-form th
 
 ---
 
-## Setup Prompts — Paste Into Your AI
+## Setup — Paste One Of These Into Your AI
 
-Two ready-to-use prompts, depending on where you're starting from. Both work with any AI agent that has shell access and can clone GitHub repos (Claude Code, Cursor, Aider, Cline, etc.).
+Pick based on whether you already have a vault. Works with any AI agent that has shell access and can clone GitHub repos (Claude Code, Cursor, Aider, Cline, etc.).
 
-| Scenario | Prompt file |
-|---|---|
-| **Fresh install** — you don't have a vault yet | [`INSTALL-PROMPT.md`](./INSTALL-PROMPT.md) |
-| **Upgrade an existing vault** — pull in upstream updates with a review-first flow | [`UPGRADE-PROMPT.md`](./UPGRADE-PROMPT.md) |
+**Fresh install** (you don't have a vault yet):
 
-Open the file for your scenario, copy the fenced code block, and paste it into a fresh AI session. The agent takes it from there.
+```
+Help me set up Jeff Burt's Open Brain from https://github.com/JMB702/jeff-burt-open-brain. Clone the repo, read the README, then follow INSTALL-PROMPT.md step by step.
+```
 
-> **On the upgrade prompt:** it's intentionally longer than the install prompt. Upgrading is a negotiation, not a script — the prompt walks the agent through five phases (audit, report, questions, apply, validate) and enforces that you see every change before it lands. See the file for details.
+**Upgrade an existing vault** (review-first, you approve each change):
 
-Raw URLs (for copy-paste without clicking around):
-- Install: `https://raw.githubusercontent.com/JMB702/jeff-burt-open-brain/main/INSTALL-PROMPT.md`
-- Upgrade: `https://raw.githubusercontent.com/JMB702/jeff-burt-open-brain/main/UPGRADE-PROMPT.md`
+```
+Help me upgrade my existing Jeff Burt's Open Brain from https://github.com/JMB702/jeff-burt-open-brain. Clone the repo, read the README, then follow UPGRADE-PROMPT.md step by step.
+```
+
+That's it. The agent clones the repo, reads the detailed playbook for your scenario, and drives the rest. If you're curious what the agent will actually do, the playbooks are right here in the repo: [`INSTALL-PROMPT.md`](./INSTALL-PROMPT.md) and [`UPGRADE-PROMPT.md`](./UPGRADE-PROMPT.md).
 
 ---
 
