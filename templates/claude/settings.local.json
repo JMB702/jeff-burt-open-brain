@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(/people/**)",
+      "Edit(/projects/**)",
+      "Edit(/Other Entities/**)",
+      "Edit(/events/**)",
+      "Edit(/Medical/**)",
+      "Edit(/notes/**)",
+      "Write(/people/**)",
+      "Write(/projects/**)",
+      "Write(/Other Entities/**)",
+      "Write(/events/**)",
+      "Write(/Medical/**)",
+      "Write(/notes/**)",
+      "Write(/tmp/**)",
+      "Bash(date)",
+      "Bash(date *)",
+      "Bash(md5 *)",
+      "Bash(md5sum *)",
+      "Bash(stat *)",
+      "Bash(find *)",
+      "Bash(touch *notes/raw-daily-notes/*.md)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(grep *)",
+      "Bash(python3 *)",
+      "Bash(sh scripts/*)",
+      "Bash(cd {{VAULT_PATH}} && git add -A && git commit *)",
+      "WebSearch"
+    ]
+  }
+}

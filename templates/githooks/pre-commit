@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+echo "Running Open Brain validator..."
+sh scripts/run_open_brain_checks.sh

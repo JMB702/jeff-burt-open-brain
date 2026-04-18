@@ -1,0 +1,208 @@
+# Open Brain
+
+{{USER_FIRST_NAME}}'s personal knowledge system — an Obsidian vault managed by AI.
+
+## Philosophy
+
+- **Daily notes are ground truth.** Static, human-written, permanent. They are the raw data and the real value.
+- **AI analysis is dynamic.** Useful but regenerable. Never treated as fact. Can be thrown away and rebuilt.
+- **Model-agnostic.** This system is designed to survive model changes. The value is in the data and structure, not in any specific AI capability.
+
+## Core Rules
+
+1. **{{USER_FIRST_NAME}} writes. The AI reads.** Never edit daily note content — only add `[[wiki links]]`.
+2. **No hallucination.** Don't invent facts or write them down. If unsure, say so.
+3. **One source of truth.** Information lives in one place. No duplication.
+4. **Auto-generated memory files are unreliable.** Claude's `.claude/` memory files can contain incorrect information. Never treat them as ground truth. Cross-reference against daily notes.
+
+## File Locations
+
+| What | Where |
+|------|-------|
+| Daily notes | `Open Brain/notes/raw-daily-notes/` |
+| Historical notes | `Open Brain/notes/historical-notes/` |
+| Transcripts | `Open Brain/notes/transcripts/` |
+| People profiles | `Open Brain/people/` |
+| Project entities | `Open Brain/projects/` |
+| Other entities | `Open Brain/Other Entities/` |
+| Event entities | `Open Brain/events/` |
+| Medical entities | `Open Brain/Medical/` |
+| Updater instructions | `Open Brain/OPEN BRAIN UPDATER.md` |
+| Entity index (JSON) | `Open Brain/entities-index.json` |
+| Entity index (readable) | `Open Brain/entities-index.md` |
+
+## Entity Index
+
+`entities-index.md` lists every entity (projects, other entities, events, medical, people) with its priority, aliases, and a flat alias lookup table. Read this file instead of scanning entity directories when you need to know what entities exist or resolve an alias.
+
+The index is regenerated automatically by `scripts/run_open_brain_checks.sh`. To rebuild manually: `python3 scripts/build_entity_index.py`
+
+## How to Find Information
+
+When you need context about a person, project, event, concept, or anything else in {{USER_FIRST_NAME}}'s life, follow this lookup order. Each step is faster and cheaper than the next — stop as soon as you have what you need.
+
+### Step 1: Check the entity index
+
+Read `entities-index.md`. It lists every tracked entity with its aliases. Use it to:
+- Confirm an entity exists before reading its file
+- Resolve informal names to their canonical entity name
+- Find the file path so you can read it directly
+
+If the topic doesn't appear in the index, it may not be tracked yet. Skip to Step 4.
+
+### Step 2: Read the entity file
+
+Once you know the entity name, read the file directly:
+- Projects → `projects/<Name>.md`
+- Other entities → `Other Entities/<Name>.md`
+- Events → `events/<Name>.md`
+- Medical → `Medical/<Name>.md`
+
+Entity files contain every paragraph {{USER_FIRST_NAME}} has written about that topic, in chronological order. This is almost always sufficient — you do not need to read raw daily notes.
+
+### Step 3: Read people profiles
+
+If you need context about a person, read their profile at `people/<slug>.md`. Profiles have:
+- Contact info, relationship, tier, roles
+- Mentions section with one-line verbatim snippets linked back to daily notes
+
+If a person is mentioned in the task but you don't know their slug, check the entity index — people are listed there too.
+
+### Step 4: Search raw daily notes (last resort)
+
+Only grep `notes/raw-daily-notes/` or `notes/historical-notes/` when:
+- The topic isn't tracked as an entity yet
+- You need the surrounding context of a paragraph (what {{USER_FIRST_NAME}} wrote before/after it)
+- {{USER_FIRST_NAME}} explicitly asks you to search raw notes
+- You're using the `/open-brain-extract` skill for a full chronological extraction
+- You need biographical/historical context about {{USER_FIRST_NAME}}'s past
+
+**Do not read raw notes as a first step.** Entity files already contain the relevant excerpts, pre-organized by topic. Reading raw notes wastes tokens on content that isn't relevant to the current task.
+
+**Historical notes** (`notes/historical-notes/`) are life history entries written from memory about past events. Good source of distant-past context but may contain inaccuracies. The filename date represents when the event happened, not when the note was written.
+
+### Cross-session context
+
+Open Brain exists to provide context in **any session, any project**. If you're working in a different repo and {{USER_FIRST_NAME}} mentions a person, project, or idea, use the lookup flow above to get context from the vault. The global `~/.claude/CLAUDE.md` has the vault path and basic instructions.
+
+## Updater Entry Point
+
+Use the canonical updater command:
+
+```bash
+sh scripts/run_open_brain_updater.sh
+```
+
+This preflights the vault with structural validation, then prints the updater instruction bundle.
+
+## What the AI Can Write
+
+- **Daily notes** (`notes/raw-daily-notes/`): **read-only** — add `[[wiki links]]` only, never edit {{USER_FIRST_NAME}}'s words
+- **Historical notes** (`notes/historical-notes/`): **read-only** — same rules as daily notes. Processed by the updater; entries flagged as historical with both event date and written date.
+- **Transcripts** (`notes/transcripts/`): **read-only** — meeting transcripts (e.g. from Zoom), one file per meeting named `YYYY-MM-DD <Meeting Name>.md`. Archive artifacts, not entities. YAML frontmatter (title, date, start_time, attendees, related_events, related_projects, related_people), then `## Summary` (human-written post-meeting with key decisions, action items, notable moments — each citing `[HH:MM:SS]` timestamps), then `## Transcript` with the verbatim body: `**[[slug|Display Name]]** [HH:MM:SS]` on one line, what they said on the next. Entities reference transcripts via a `## Transcript` section with `- [[YYYY-MM-DD <Meeting Name>]] — Zoom transcript`. Create with `python3 scripts/clean_zoom_transcript.py --input raw.txt --title "..." --date YYYY-MM-DD --entity events/... --entity projects/...` — it scaffolds an empty `## Summary` for you to fill in after the meeting.
+- **People profiles** (`people/`): writable — update with new info from notes
+- **Entity metadata**: Every entity file (projects, Other Entities, events, Medical) starts with YAML frontmatter:
+  ```yaml
+  ---
+  priority: active | background | archive
+  aliases: [alternate name 1, alternate name 2, informal reference]
+  first_mention: "YYYY-MM-DD"
+  last_entry_date: "YYYY-MM-DD"
+  people: [slug-one, slug-two]
+  ---
+  ```
+  Event and Medical files may add extra fields (e.g., `date`, `time`, `location`, `status`, `condition_type`). The `aliases` field lists all names {{USER_FIRST_NAME}} uses for this entity in daily notes. The updater uses these to match mentions and create correct wiki links. When {{USER_FIRST_NAME}} writes an alias, the wiki link becomes `[[Entity Name|alias used]]`. The `last_entry_date` field is maintained by the updater on every append and is the source of truth for dormancy checks.
+- **Project entities** (`projects/`): **append-only, verbatim paragraphs** — copy every paragraph that mentions the entity from the daily note, complete and uncut. No summaries or AI content:
+  ```
+  ## YYYY-MM-DD
+  > [full paragraph from daily note, verbatim]
+  — [[YYYY-MM-DD]]
+  ```
+- **Other entities** (`Other Entities/`): **same verbatim paragraph format** as project entities
+- **Event entities** (`events/`): **extended YAML frontmatter + verbatim paragraphs** — base frontmatter plus event-specific fields (`date`, `time`, `location`, `status`), then verbatim daily note paragraphs
+- **Medical entities** (`Medical/`): **YAML frontmatter + human metadata tables + verbatim paragraphs** — base YAML frontmatter, then markdown tables for human-readable medication/trigger/treatment info, then verbatim daily note entries below. Medical Info.md is the overview; condition-specific files have their own metadata and episode logs.
+- **Entity summaries**: Each entity file may have an HTML-commented summary block at the top for human reading. AI must not use summaries as analytical input — do not generate trends, insights, or new summaries from old summaries. Only use the verbatim entries for analysis. Summaries may be read for display purposes (e.g., surfacing last known status in dormant entity alerts).
+- **No `# Title` headings** in any file. Obsidian displays the filename as the title — a `# Title` heading creates a duplicate. Start files with metadata, summaries, or content directly.
+- **Project source code and project CLAUDE.md files**: **do not read** — daily notes are the only source of project status
+
+## Daily Notes
+
+- {{USER_FIRST_NAME}} writes notes directly in Obsidian on phone and desktop. New notes appear under `notes/raw-daily-notes/`.
+- **Organized by year and month:** `notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md` (e.g., `2026/04-April/2026-04-18.md`). Month folders are zero-padded numeric prefix + full month name (so they sort chronologically and read naturally).
+- Filename format: `YYYY-MM-DD.md` (optionally `YYYY-MM-DD-slug.md` for notes on a specific topic).
+- Sacred. Never edit content. Only add `[[wiki links]]`.
+- **Project status comes from daily notes only.**
+- The manifest and all scripts key off the filename alone — filenames must stay globally unique across month folders (the date prefix guarantees this).
+
+## People Profiles
+
+- Every person {{USER_FIRST_NAME}} mentions lives in `people/`. Read before writing about anyone.
+- Tiers 1–5 by closeness (1 = inner circle, 5 = public figures).
+- Find someone by filename: `people/first-last.md`
+- To find every mention of a person, grep the vault: `grep -rl '\[\[first-last' "Open Brain/"`
+
+### Profile sections (in order)
+
+1. **YAML frontmatter** — structured fields (name, roles, phone, email, tier, etc.). Writable by the updater.
+2. **`## Relationship`** — short bullets describing {{USER_FIRST_NAME}}'s relationship with the person, how they met, context. Human-curated; the updater may append when new context appears.
+3. **`## Mentions`** — one-line verbatim snippets per daily note, each linked back to `[[YYYY-MM-DD]]`. The updater owns this section and appends on every run.
+4. **`## Background`** *(optional, human-curated)* — external sources about the person (articles, bios, public profiles). The updater does NOT modify this section. Format each source as:
+   ```
+   ### Source title — YYYY-MM-DD
+   Source: <URL>
+
+   > [excerpt as a blockquote, verbatim]
+   ```
+   Use `###` for the source heading (not `#` — that breaks Obsidian's filename-as-title convention). If the excerpt is long, keep it as a single blockquote with `>` prefixing every line, including blank lines between paragraphs.
+
+## Wiki Links
+
+Open Brain is an Obsidian vault. Wiki links connect entities — people, projects, events, and other entities (ideas, concepts, interests, personal topics).
+
+- People: `[[first-last|Display Name]]`
+- Projects: `[[Project Name]]`
+- Events: `[[Event Name]]`
+- Medical: `[[Condition Name]]`
+- Other Entities: `[[Entity Name]]`
+- Link every mention. In Obsidian, wiki links are navigation — clicking any mention jumps to the entity file. More links = more navigable notes.
+
+## Manifest
+
+`notes/.manifest` tracks which notes (both daily and historical) have been processed by the updater. General sessions don't need to touch this file — it's managed by the updater task.
+
+## Validation
+
+- Structural validation lives in `scripts/validate_open_brain.py`
+- After any Open Brain file edits that change entity structure, metadata, links, summaries, events, or the manifest, run:
+  ```bash
+  sh scripts/run_open_brain_checks.sh
+  ```
+- For low-risk normalization only, you may preview:
+  ```bash
+  sh scripts/run_open_brain_checks.sh --check-fix
+  ```
+- If the preview looks appropriate, apply:
+  ```bash
+  sh scripts/run_open_brain_checks.sh --fix
+  ```
+- Do not treat `--fix` as permission to rewrite daily note content or entity entry text. It is only for low-risk structural normalization.
+
+<!-- IF SLACK -->
+## Slack
+
+- Workspace: `{{SLACK_WORKSPACE}}`
+- Do not read the briefing channel — past briefings are stale. Read all other channels.
+<!-- END SLACK -->
+
+## Calendar
+
+- Timezone: `{{TIMEZONE}}`
+- `[Open Brain]` events are AI-created and can be updated or removed.
+- {{USER_FIRST_NAME}}'s events are immovable constraints.
+
+## Version Control
+
+After making changes to Open Brain files:
+```bash
+cd "{{VAULT_PATH}}" && git add -A && git commit -m "Brief description"
+```

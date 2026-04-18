@@ -1,0 +1,19 @@
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/
+.obsidian/themes/
+
+# macOS
+.DS_Store
+.Trash/
+
+# Claude Code
+.claude/memory/
+
+# Temp files
+*.tmp
+*~
+
+# Updater scratch (run-delta.json etc)
+tmp/
