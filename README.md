@@ -62,9 +62,13 @@ They're not mutually exclusive. You can journal in Jeff's vault for long-form th
 
 ---
 
-## Setup — Paste This Prompt Into Your AI
+## Setup Prompts — Paste Into Your AI
 
-Works with any agent that has shell access and can clone GitHub repos (Claude Code, Cursor, Aider, Cline, etc.). Copy the fenced block below and paste it into a fresh session:
+Both prompts below work with any agent that has shell access and can clone GitHub repos (Claude Code, Cursor, Aider, Cline, etc.). Copy the fenced block for your scenario and paste it into a fresh session.
+
+### Fresh Install
+
+Use this if you don't have a vault yet:
 
 ```
 I want to set up Jeff Burt's Open Brain — an AI-readable personal knowledge vault for daily notes plus automatic entity extraction.
@@ -95,6 +99,53 @@ Please do the following:
 6. Tell me what my first-day actions are — creating my first daily note at the right path, connecting external services, scheduling the updater, opening the vault in Obsidian.
 
 Start by asking me where I want the vault to live on my filesystem.
+```
+
+### Upgrade an Existing Vault
+
+Use this if you already have a vault installed and want the latest scripts, skills, and template fixes:
+
+```
+I already have Jeff Burt's Open Brain installed and I want to pull in the latest updates.
+
+The setup system lives at: https://github.com/JMB702/jeff-burt-open-brain
+
+Please do the following:
+
+1. Clone the latest setup repo into a scratch directory:
+   git clone https://github.com/JMB702/jeff-burt-open-brain.git /tmp/jb-open-brain-setup
+   cd /tmp/jb-open-brain-setup
+
+2. Ask me for the absolute path to my existing Open Brain vault.
+
+3. Safety first: check for uncommitted changes in my vault. If there are any, ask me to commit or stash them before you touch anything.
+
+4. Run the automated upgrade from inside the cloned setup repo:
+   sh setup.sh --upgrade <my-vault-path>
+   This updates regenerable things automatically: scripts/, .githooks/, the open-brain-extract skill, and the scheduled-task SKILL.md. It does NOT overwrite my CLAUDE.md, OPEN BRAIN UPDATER.md, .claude/settings.local.json, or any vault content — those have my customizations.
+
+5. Read SETUP-INSTRUCTIONS.md sections U3 and U4. Diff my vault's CLAUDE.md and OPEN BRAIN UPDATER.md against the upstream templates in templates/vault/. Surface every meaningful change — new sections, changed instructions, new conventions — and ask me before applying any of them. Respect my template substitutions (my name, vault path, timezone, briefing method) when comparing.
+
+6. Read section U5. Compare templates/claude/settings.local.json against my .claude/settings.local.json. If any new permission UUIDs were added upstream, tell me which ones and ask before adding them.
+
+7. Read section U6. Check if the global ~/.claude/CLAUDE.md section has changed upstream. If so, surface the diff and ask before applying.
+
+8. Run the validator from my vault root: sh scripts/run_open_brain_checks.sh
+   Fix any new errors that surface from the updated validator.
+
+9. Summarize: what was auto-updated, what I need to review manually, whether the scheduled task needs reloading, and whether I need to re-authenticate any external services (Slack, Gmail, iMessage).
+
+Hard rules — do not touch any of these under any circumstance:
+- notes/raw-daily-notes/
+- notes/historical-notes/
+- notes/transcripts/
+- projects/, "Other Entities/", events/, Medical/, people/, places/, research/
+- entities-index.json, entities-index.md (regenerated automatically)
+- notes/.manifest
+- .obsidian/workspace.json, .obsidian/plugins/, .obsidian/themes/
+- Anything I've written by hand in the Background sections of people profiles
+
+Start by asking for my vault's absolute path and confirming you have permission to run shell commands and edit files there.
 ```
 
 ---
