@@ -17,3 +17,7 @@
 
 # Updater scratch (run-delta.json etc)
 tmp/
+
+# Photo metadata is sensitive — keep GPS/album data out of git
+Photos/photos-index.json
+tmp/photo-exports/

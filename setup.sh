@@ -74,6 +74,16 @@ strip_conditionals() {
     else
         sed -i '' '/<!-- IF SLACK -->/,/<!-- END SLACK -->/d' "$file"
     fi
+
+    # Handle the PHOTOS_INTEGRATION conditional — kept for native + adapt, stripped for skip
+    if [ "${PHOTOS_INTEGRATION:-skip}" = "skip" ]; then
+        sed -i '' '/<!-- IF PHOTOS_INTEGRATION -->/,/<!-- END PHOTOS_INTEGRATION -->/d' "$file"
+    else
+        sed -i '' \
+            -e '/<!-- IF PHOTOS_INTEGRATION -->/d' \
+            -e '/<!-- END PHOTOS_INTEGRATION -->/d' \
+            "$file"
+    fi
 }
 
 # Verify no leftover template markers remain in a file
@@ -84,9 +94,9 @@ verify_clean() {
         grep -nE '\{\{[A-Z_]+\}\}' "$file"
         return 1
     fi
-    if grep -qE '<!-- (IF BRIEFING_METHOD|IF SLACK|END (slack|imessage|email|file|SLACK)) -->' "$file" 2>/dev/null; then
+    if grep -qE '<!-- (IF BRIEFING_METHOD|IF SLACK|IF PHOTOS_INTEGRATION|END (slack|imessage|email|file|SLACK|PHOTOS_INTEGRATION)) -->' "$file" 2>/dev/null; then
         echo "WARNING: leftover conditional markers in $(basename "$file"):"
-        grep -nE '<!-- (IF BRIEFING_METHOD|IF SLACK|END (slack|imessage|email|file|SLACK)) -->' "$file"
+        grep -nE '<!-- (IF BRIEFING_METHOD|IF SLACK|IF PHOTOS_INTEGRATION|END (slack|imessage|email|file|SLACK|PHOTOS_INTEGRATION)) -->' "$file"
         return 1
     fi
     return 0
@@ -126,6 +136,21 @@ load_config() {
         file)     ;;
         *)        die "Unknown BRIEFING_METHOD: $BRIEFING_METHOD (expected: slack, imessage, email, file)" ;;
     esac
+
+    # Validate photos integration mode (default: skip)
+    [ -n "${PHOTOS_INTEGRATION:-}" ] || PHOTOS_INTEGRATION="skip"
+    case "$PHOTOS_INTEGRATION" in
+        native|adapt|skip) ;;
+        *) die "Unknown PHOTOS_INTEGRATION: $PHOTOS_INTEGRATION (expected: native, adapt, skip)" ;;
+    esac
+    export PHOTOS_INTEGRATION
+
+    # Warn if native mode on non-macOS — photos pipeline won't work without Apple Photos
+    if [ "$PHOTOS_INTEGRATION" = "native" ] && [ "$(uname -s)" != "Darwin" ]; then
+        echo "  WARNING: PHOTOS_INTEGRATION=native but host is $(uname -s), not Darwin."
+        echo "           The photos scripts will install but osxphotos is macOS-only."
+        echo "           Consider PHOTOS_INTEGRATION=adapt instead."
+    fi
 }
 
 # ─────────────────────────────────────────────────────
@@ -187,9 +212,34 @@ do_install() {
     done
 
     # Scripts (no substitution — work as-is)
-    cp "$SETUP_DIR/templates/scripts/"* "$VAULT_PATH/scripts/"
+    # Copy non-photos scripts first; photos scripts are handled conditionally below.
+    for f in "$SETUP_DIR/templates/scripts/"*; do
+        case "$(basename "$f")" in
+            photos_*.py) : ;;  # skip — photos scripts installed conditionally
+            *) cp "$f" "$VAULT_PATH/scripts/" ;;
+        esac
+    done
     chmod +x "$VAULT_PATH/scripts/"*.sh
     chmod +x "$VAULT_PATH/scripts/"*.py
+
+    # Photos integration (conditional on PHOTOS_INTEGRATION != skip)
+    if [ "$PHOTOS_INTEGRATION" != "skip" ]; then
+        mkdir -p "$VAULT_PATH/Photos"
+        mkdir -p "$VAULT_PATH/.claude/skills/what-did-i-see"
+        mkdir -p "$VAULT_PATH/.claude/skills/photos-for-event"
+        cp "$SETUP_DIR/templates/scripts/photos_"*.py "$VAULT_PATH/scripts/"
+        chmod +x "$VAULT_PATH/scripts/photos_"*.py
+        cp "$SETUP_DIR/templates/claude/skills/what-did-i-see/SKILL.md" \
+           "$VAULT_PATH/.claude/skills/what-did-i-see/SKILL.md"
+        cp "$SETUP_DIR/templates/claude/skills/photos-for-event/SKILL.md" \
+           "$VAULT_PATH/.claude/skills/photos-for-event/SKILL.md"
+        cp "$SETUP_DIR/templates/vault/Photos/README.md" "$VAULT_PATH/Photos/README.md"
+        if [ "$PHOTOS_INTEGRATION" = "adapt" ]; then
+            cp "$SETUP_DIR/templates/vault/Photos/WINDOWS-ADAPTATION.md" \
+               "$VAULT_PATH/Photos/WINDOWS-ADAPTATION.md"
+        fi
+        info "Photos integration installed (mode: $PHOTOS_INTEGRATION)."
+    fi
 
     # Generate AGENTS.md from the substituted CLAUDE.md
     ( cd "$VAULT_PATH" && python3 scripts/generate_agents_md.py >/dev/null )
@@ -294,6 +344,14 @@ PROFILE
     fi
     echo "  4. Configure the open-brain-updater scheduled task (e.g., daily at 6 AM)"
     echo "  5. See examples/ in the setup directory for entity file format reference"
+    if [ "$PHOTOS_INTEGRATION" = "native" ]; then
+        echo "  6. Photos integration: run 'pip3 install osxphotos' and grant Full Disk"
+        echo "     Access in System Settings → Privacy & Security → Full Disk Access."
+        echo "     Then: python3 scripts/photos_update_index.py"
+    elif [ "$PHOTOS_INTEGRATION" = "adapt" ]; then
+        echo "  6. Photos integration: see Photos/WINDOWS-ADAPTATION.md for how to"
+        echo "     implement a non-macOS backend that produces photos-index.json."
+    fi
     echo
 }
 
@@ -322,12 +380,27 @@ do_upgrade() {
     fi
     info "Backups created with timestamp .$ts"
 
-    # Copy scripts (overwrite)
+    # Copy scripts (overwrite). Photos scripts only if the vault has Photos/
+    # (indicates photos integration is enabled on this vault).
     echo "Updating scripts..."
     mkdir -p "$vault_path/scripts"
-    cp "$SETUP_DIR/templates/scripts/"* "$vault_path/scripts/"
+    for f in "$SETUP_DIR/templates/scripts/"*; do
+        case "$(basename "$f")" in
+            photos_*.py)
+                if [ -d "$vault_path/Photos" ]; then
+                    cp "$f" "$vault_path/scripts/"
+                fi
+                ;;
+            *) cp "$f" "$vault_path/scripts/" ;;
+        esac
+    done
     chmod +x "$vault_path/scripts/"*.sh
-    info "Scripts updated."
+    chmod +x "$vault_path/scripts/"*.py 2>/dev/null || true
+    if [ -d "$vault_path/Photos" ]; then
+        info "Scripts updated (including photos scripts)."
+    else
+        info "Scripts updated (photos scripts skipped — no Photos/ dir)."
+    fi
 
     # Copy git hooks (overwrite)
     echo "Updating git hooks..."

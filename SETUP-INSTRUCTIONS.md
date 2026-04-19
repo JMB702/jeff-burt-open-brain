@@ -8,7 +8,8 @@ You are setting up **Open Brain**, a personal knowledge system built on Obsidian
 - **Claude Code** (or another AI coding agent) installed
 - **Git** installed
 - **Python 3** installed (for validation and entity index scripts)
-- macOS or Linux (Windows support untested)
+- macOS or Linux (Windows support untested — `setup.sh` uses BSD sed, so the manual path in this file is the recommended Windows route)
+- **Optional:** the Apple Photos integration is macOS-only (depends on `osxphotos`). Windows/Linux users can install the scripts with adaptation notes and write their own backend. See the `PHOTOS_INTEGRATION` preference in Step 1.
 
 ---
 
@@ -177,6 +178,20 @@ Ask the user the following questions using your Q&A system. Store all answers �
 
 6. **Do you want calendar integration?** (for scheduling awareness in briefings) → `{{CALENDAR_ENABLED}}` (`true`/`false`)
 
+7. **Apple Photos integration** (optional).
+
+   First determine the user's operating system (the AI agent already knows its own platform). Then ask the version of the question that fits:
+
+   - **On macOS:** "Enable the Apple Photos integration? It lets the system use your photo GPS, timestamps, albums, face clusters, and Apple's pre-computed scene labels / OCR as knowledge about your life. Requires one-time `pip3 install osxphotos` and granting Full Disk Access."
+     - `Yes (install)` → store as `PHOTOS_INTEGRATION=native` (default)
+     - `Skip` → store as `PHOTOS_INTEGRATION=skip`
+
+   - **On Windows/Linux:** "The photos integration is macOS-only — it reads Apple Photos' local database via `osxphotos`. You can skip it, or install the infrastructure plus an adaptation guide so you can write a non-macOS backend (e.g., against Windows Photos, Google Takeout, or a folder of JPEGs)."
+     - `Skip` → store as `PHOTOS_INTEGRATION=skip` (default)
+     - `Install with adaptation notes` → store as `PHOTOS_INTEGRATION=adapt`
+
+   Store the choice as `PHOTOS_INTEGRATION` (one of `native`, `adapt`, `skip`). This controls whether the photos scripts, skills, and Photos/ directory are installed, and whether `Photos/WINDOWS-ADAPTATION.md` is included.
+
 ---
 
 ## Step 2: Create Vault Directory Structure
@@ -254,6 +269,27 @@ For each template file listed below, copy it to the specified destination inside
 | `templates/scripts/README.md` | `{{VAULT_PATH}}/scripts/README.md` |
 | `templates/githooks/pre-commit` | `{{VAULT_PATH}}/.githooks/pre-commit` |
 | `dotgitignore` | `{{VAULT_PATH}}/.gitignore` |
+
+**Conditional: if `PHOTOS_INTEGRATION` is `native` or `adapt`, also copy:**
+
+| Template Source | Destination |
+|---|---|
+| `templates/scripts/photos_update_index.py` | `{{VAULT_PATH}}/scripts/photos_update_index.py` |
+| `templates/scripts/photos_query.py` | `{{VAULT_PATH}}/scripts/photos_query.py` |
+| `templates/scripts/photos_for_entity.py` | `{{VAULT_PATH}}/scripts/photos_for_entity.py` |
+| `templates/scripts/photos_export.py` | `{{VAULT_PATH}}/scripts/photos_export.py` |
+| `templates/scripts/photos_candidates.py` | `{{VAULT_PATH}}/scripts/photos_candidates.py` |
+| `templates/claude/skills/what-did-i-see/SKILL.md` | `{{VAULT_PATH}}/.claude/skills/what-did-i-see/SKILL.md` |
+| `templates/claude/skills/photos-for-event/SKILL.md` | `{{VAULT_PATH}}/.claude/skills/photos-for-event/SKILL.md` |
+| `templates/vault/Photos/README.md` | `{{VAULT_PATH}}/Photos/README.md` |
+
+**And if `PHOTOS_INTEGRATION=adapt` only:**
+
+| Template Source | Destination |
+|---|---|
+| `templates/vault/Photos/WINDOWS-ADAPTATION.md` | `{{VAULT_PATH}}/Photos/WINDOWS-ADAPTATION.md` |
+
+The photos scripts and skills are not templatized — copy as-is. The conditional `<!-- IF PHOTOS_INTEGRATION -->` blocks in `CLAUDE.md` and `OPEN-BRAIN-UPDATER.md` should be stripped if `PHOTOS_INTEGRATION=skip`, or their markers removed (keeping the content) otherwise. If you're running `setup.sh`, this is handled automatically.
 
 **Note:** Scripts and githooks are NOT templatized — copy them as-is. After copying, make all scripts executable and generate `AGENTS.md` from the substituted `CLAUDE.md`:
 
@@ -391,6 +427,9 @@ Tell the user:
 4. **Connect integrations:** If you chose Slack/Gmail/iMessage for briefings, connect the MCP integration in Claude Code and add the permission to `.claude/settings.local.json` (see Step 4 for details).
 5. **Schedule the updater:** Configure the `open-brain-updater` scheduled task to run daily at your preferred time (e.g., 6 AM).
 6. **Start writing:** Create your first daily note at `notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md` (e.g., `notes/raw-daily-notes/2026/04-April/2026-04-05.md`). Write freely — the updater will process it on its next run.
+7. **Photos integration** (only if `PHOTOS_INTEGRATION ≠ skip`):
+   - If `PHOTOS_INTEGRATION=native` (macOS): run `pip3 install osxphotos`, then grant Full Disk Access to the terminal in System Settings → Privacy & Security → Full Disk Access. Verify with `python3 -c "import osxphotos; print(len(osxphotos.PhotosDB().photos()))"`. Then build the initial index: `python3 scripts/photos_update_index.py --verbose`.
+   - If `PHOTOS_INTEGRATION=adapt` (Windows/Linux): open `Photos/WINDOWS-ADAPTATION.md` — it documents the `photos-index.json` schema and the non-macOS backend choices. Once you produce a valid `Photos/photos-index.json`, all the query and ranker scripts work unchanged.
 
 ---
 

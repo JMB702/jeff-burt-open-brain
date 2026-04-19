@@ -160,6 +160,20 @@ sh scripts/run_open_brain_checks.sh --fix
 
 Do not proceed to Step 3 until validation passes.
 
+<!-- IF PHOTOS_INTEGRATION -->
+### 2g. Refresh the Photos Metadata Cache
+
+After validation, refresh the Apple Photos metadata cache so entity/date queries from future sessions read fresh data:
+
+```bash
+python3 scripts/photos_update_index.py
+```
+
+This rewrites `Photos/photos-index.json` (gitignored). It has no effect on the briefing itself — it's infrastructure.
+
+**Skip silently on failure.** If the script reports osxphotos isn't installed or Full Disk Access isn't granted, log a one-line warning and proceed to Step 3. Do NOT block the updater on this. {{USER_FIRST_NAME}} can run the setup from `Photos/README.md` on their own time.
+<!-- END PHOTOS_INTEGRATION -->
+
 ---
 
 ## Step 3: Trends & Insights
