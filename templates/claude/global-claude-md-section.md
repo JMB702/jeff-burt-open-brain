@@ -1,33 +1,44 @@
 
-## Deep Context — Open Brain
+## Open Brain — {{USER_FIRST_NAME}}'s knowledge system
 
-When you need additional context about {{USER_FIRST_NAME}}'s life, projects, people, or ideas that isn't covered above, search their **Open Brain** knowledge system. Open Brain is an Obsidian vault at:
+**`{{VAULT_PATH}}/`** is {{USER_FIRST_NAME}}'s personal knowledge base. **Treat it as an extension of this file.** Consult it by default for any non-trivial question about {{USER_FIRST_NAME}}, their people, projects, preferences, or history. Skip it only for pure technical tasks with no personal context.
 
-```
-{{VAULT_PATH}}/
-```
+### Default triggers — consult Open Brain when you see any of these
 
-### How to find information in Open Brain
+- **Proper nouns** that might be a person, project, place, or event → check `entities-index.md` for aliases and the right file path.
+- **Phrases like** "mentioned before," "wrote about," "last time," "my X," "what do I think about Y," "the X project" → Open Brain.
+- **Personal context** — schedule, preferences, budget, goals, relationships, opinions, past decisions → Open Brain.
+- **Location, date, photo, or OCR questions** ("where was I," "find the receipt," "photos from X") → Photos integration (below) before pixel vision.
+- **Project work** needing personal context not present in the project directory → Open Brain.
 
-Follow this order — stop as soon as you have what you need:
+If none of those apply, proceed normally.
 
-1. **Entity index** → Read `entities-index.md` first. It lists every entity (projects, people, events, concepts) with aliases. Use it to resolve names and find the right file path.
-2. **Entity file** → Read the entity file directly (e.g., `projects/My Project.md`). It contains every paragraph {{USER_FIRST_NAME}} has written about that topic, chronologically. This is almost always sufficient.
-3. **People profile** → For info about a person, read `people/<slug>.md`. Has contact info, relationship context, and mentions.
-4. **Raw daily notes** → Only grep `notes/raw-daily-notes/` as a last resort — when the topic isn't tracked yet, or {{USER_FIRST_NAME}} explicitly asks to search notes. Entity files already contain the relevant excerpts.
-5. **Historical notes** → Check `notes/historical-notes/` for biographical/historical context about {{USER_FIRST_NAME}}'s past. These are life history entries written from memory — good context but may contain inaccuracies.
+### Lookup order — stop when you have enough
 
-**Do not scan raw notes as a first step.** That wastes tokens on irrelevant content.
+1. **Meta-questions about Open Brain itself** ("what is Open Brain," "what can it do," architecture/components) → read `{{VAULT_PATH}}/CLAUDE.md` and `{{VAULT_PATH}}/AGENTS.md` **first**. The tracker at `projects/Open Brain.md` narrates evolution; CLAUDE.md describes current architecture.
+2. **Entity index** → `entities-index.md`. Flat list of every entity with aliases. Resolves names and gives you the right file path.
+3. **Entity file** → `projects/<Name>.md`, `events/<Name>.md`, `Medical/<Name>.md`, `Other Entities/<Name>.md`. Verbatim daily-note paragraphs, chronological.
+4. **Today's raw note** → `notes/raw-daily-notes/YYYY/MM-Month/YYYY-MM-DD.md`. Check this if the topic seems recent — the morning updater runs on a schedule, so anything written since hasn't been processed into entities yet.
+5. **People — for communication context** → `~/.claude/people/<slug>.md` (richer profile with tech level, communication style, topics to avoid). Use this before messaging or advising about someone.
+6. **People — for chronological mentions** → `{{VAULT_PATH}}/people/<slug>.md` (verbatim daily-note paragraphs, like other entities).
+7. **Historical notes** → `notes/historical-notes/` — biographical context {{USER_FIRST_NAME}} wrote from memory. Flagged as less reliable than daily notes.
+8. **Raw daily notes archive** → `notes/raw-daily-notes/YYYY/MM-Month/`. Only grep as a last resort when the entity file is missing or {{USER_FIRST_NAME}} explicitly asks.
 
-### When to access Open Brain
-- {{USER_FIRST_NAME}} asks about a person, project, or idea not covered in this file
-- You need historical context on how a decision evolved
-- You need to understand {{USER_FIRST_NAME}}'s relationship with someone
-- {{USER_FIRST_NAME}} references something they "wrote about" or "mentioned before"
-- You're working on a project and need context about {{USER_FIRST_NAME}}'s goals, preferences, or prior decisions
+### Photos integration
 
-### Rules when accessing Open Brain
-- **Never edit daily notes** — read-only. You may only add `[[wiki links]]`.
-- **Never invent facts.** If it's not in the notes, say you don't know.
-- **Daily notes are the source of truth** for project status — not source code or other CLAUDE.md files.
-- Use the `/open-brain-extract` skill for full chronological extraction of a topic.
+Apple Photos metadata (GPS, timestamps, face clusters, albums, OCR text) is cached locally and queryable via scripts in `{{VAULT_PATH}}/scripts/`:
+
+- `photos_query.py <date>` — by date/range
+- `photos_for_entity.py <entity-file>` — correlate photos to an entity
+- `photos_candidates.py <date>` — ranked shortlist with filters (`--person`, `--location`, `--text`, `--labels`)
+- `photos_export.py <uuid>` — materialize a photo for vision
+
+Metadata first, pixel vision sparingly. User skills: `/what-did-i-see`, `/photos-for-event`. Full rules: `{{VAULT_PATH}}/Photos/README.md`.
+
+### Hard rules
+
+- **Never edit raw daily notes.** Wiki-link additions only (`[[Entity Name]]`).
+- **Never invent facts.** If Open Brain doesn't say it, say you don't know.
+- **Daily notes are source of truth** for how {{USER_FIRST_NAME}} thinks — not source code, not old CLAUDE.md files, not auto-generated memory.
+- **Project's own CLAUDE.md** is authoritative for project content; Open Brain summarizes and connects.
+- Skills: `/open-brain` (read + create), `/open-brain-edit` (modify existing), `/open-brain-extract` (chronological extraction on a topic), `/daily-note` (log a session).

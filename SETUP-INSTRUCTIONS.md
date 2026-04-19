@@ -36,7 +36,14 @@ The fastest path is to use `setup.sh`. It handles directory creation, file copyi
 
 Run: `sh setup.sh --upgrade "~/Documents/Open Brain"`
 
-This copies the latest scripts/hooks, validates, and builds the entity index. It does NOT overwrite CLAUDE.md or the updater — it prints what to review manually.
+This does the following automatically:
+- Backs up the vault's `CLAUDE.md` and `OPEN BRAIN UPDATER.md`.
+- Refreshes all scripts and git hooks.
+- Ensures the scheduled-task SKILL exists.
+- Rewrites the Open Brain section in `~/.claude/CLAUDE.md` using the current template (detects legacy `## Deep Context — Open Brain` heading and replaces it with `## Open Brain — <name>'s knowledge system`).
+- Rebuilds the entity index.
+
+It does NOT overwrite the vault's `CLAUDE.md` or `OPEN BRAIN UPDATER.md` (those may have user customizations). The script prints a manual-review checklist at the end pointing at the current templates so the AI or user can reconcile any missing sections.
 
 ### Manual Setup (Fallback)
 
@@ -110,14 +117,20 @@ Check `{{VAULT_PATH}}/.claude/settings.local.json` and ensure it includes:
 
 ### U6. Update Global CLAUDE.md
 
-Check `~/.claude/CLAUDE.md` for the "Deep Context — Open Brain" section. The search order should be:
-1. Entity index (`entities-index.md`) — start here
-2. Entity files (`projects/`, `Other Entities/`, etc.)
-3. People profiles (`people/`)
-4. Daily notes (`notes/raw-daily-notes/`) — last resort
-5. Historical notes (`notes/historical-notes/`) — biographical context
+**If you ran `sh setup.sh --upgrade`, skip this step** — it's already done (the script detects the legacy `## Deep Context — Open Brain` heading and rewrites it using the current template).
 
-If the section references a stale path like `daily-notes/Other/`, update it. Daily notes are now at `notes/raw-daily-notes/`.
+**Manual path** (if the script path didn't work):
+
+Check `~/.claude/CLAUDE.md` for the Open Brain section. The current heading is **"Open Brain — {{USER_FIRST_NAME}}'s knowledge system"** (older installs may have the heading "Deep Context — Open Brain" — rename and rewrite the whole section).
+
+The section should frame Open Brain as **default-on**, not a fallback, and should include:
+- **Default triggers** — proper nouns, "mentioned before"-style phrases, personal context, location/photo questions, project work needing personal context.
+- **Lookup order** — meta-questions go to vault `CLAUDE.md`/`AGENTS.md` first, then entity index, entity file, today's raw note, people profiles (`~/.claude/people/` for communication, vault `people/` for mentions), historical notes, then raw notes archive as last resort.
+- **Photos integration** — pointers to `scripts/photos_*.py` and the `/what-did-i-see`, `/photos-for-event` skills.
+- **Hard rules** — never edit raw notes, never invent facts, daily notes are source of truth, project's own CLAUDE.md is authoritative for project content.
+- Correct raw-notes path: `notes/raw-daily-notes/YYYY/MM-Month/YYYY-MM-DD.md` (not `daily-notes/Other/` — that's a legacy path from early installs).
+
+Use the current template at `templates/claude/global-claude-md-section.md` as the canonical version. Replace `{{VAULT_PATH}}` and `{{USER_FIRST_NAME}}` with the user's values, then replace (or append if absent) the section in `~/.claude/CLAUDE.md`.
 
 ### U7. Validate and Build Index
 
@@ -362,12 +375,12 @@ The MCP server UUIDs are installation-specific and cannot be predicted. The user
 
 ## Step 5: Append to Global ~/.claude/CLAUDE.md
 
-This step adds the "Deep Context — Open Brain" section to the user's global Claude configuration so all Claude sessions know about the vault.
+This step adds the Open Brain section ("Open Brain — {{USER_FIRST_NAME}}'s knowledge system") to the user's global Claude configuration so all Claude sessions know about the vault and use it by default.
 
 1. Check if `~/.claude/` directory exists. If not, create it: `mkdir -p ~/.claude`
 2. Check if `~/.claude/CLAUDE.md` exists.
    - If it exists, back it up: `cp ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.bak.$(date +%s)`
-   - Check if it already contains `## Deep Context — Open Brain`. If so, **skip this step** (don't duplicate).
+   - Check if it already contains an Open Brain section. Match on either the current heading (`## Open Brain — ` — note the em dash) or the legacy heading (`## Deep Context — Open Brain`). If either is present, **skip this step** (don't duplicate). For legacy installs, see U6 in the update flow to rewrite to the current template.
 3. Read `templates/claude/global-claude-md-section.md`, replace all `{{VARIABLE}}` placeholders.
 4. Append the result to `~/.claude/CLAUDE.md` (or create it if it doesn't exist).
 

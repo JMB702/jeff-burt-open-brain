@@ -99,7 +99,6 @@ After matching:
 - **Update `last_entry_date` in the entity's YAML frontmatter** every time you append a paragraph. Set it to the note's date (for daily notes) or the event date from the historical note filename (for historical notes). The field is the source of truth for the dormancy check in Step 3b.
 - Update people profiles with new information
 - Update `notes/.manifest` with the current hash for each processed note (add new entries or replace stale hashes). Compute with `md5 -q <filepath>` (macOS) or `md5sum <filepath>` (Linux).
-- If no note exists for today, create an empty file under the correct year/month subdirectory: `mkdir -p notes/raw-daily-notes/YYYY/MM-MonthName && touch notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md` (e.g., `notes/raw-daily-notes/2026/04-April/2026-04-18.md`). Do not add any content or headings — the filename is the date.
 - **Historical notes:** Process files in `notes/historical-notes/` the same way as daily notes, but flag entries as historical when appending to entity files. The filename date is when the event happened; the written date comes from the file's filesystem creation date (`stat -f %SB` on macOS). Use this format in entity files:
   ```
   ## YYYY-MM-DD (historical — written YYYY-MM-DD)

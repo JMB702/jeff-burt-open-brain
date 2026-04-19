@@ -11,6 +11,39 @@ sh scripts/run_open_brain_checks.sh
 echo
 echo "Preflight passed."
 echo
+
+# Ensure today's blank daily note exists (idempotent).
+# The model doesn't need to remember this — the preflight handles it.
+TODAY=$(date +%Y-%m-%d)
+YEAR_DIR=$(date +%Y)
+MONTH_DIR="$(date +%m)-$(date +%B)"
+NOTE_REL="notes/raw-daily-notes/${YEAR_DIR}/${MONTH_DIR}/${TODAY}.md"
+EMPTY_MD5="d41d8cd98f00b204e9800998ecf8427e"
+MANIFEST="notes/.manifest"
+
+if [ ! -f "$NOTE_REL" ]; then
+  mkdir -p "$(dirname "$NOTE_REL")"
+  touch "$NOTE_REL"
+  NOTE_STATUS="created"
+else
+  NOTE_STATUS="exists"
+fi
+
+# If the note is empty, make sure the manifest has an entry so a future edit
+# registers as "modified". If the note already has content, let notes_to_process
+# surface it through the normal flow.
+MANIFEST_STATUS="—"
+if [ ! -s "$NOTE_REL" ] && ! grep -q "^${TODAY}.md|" "$MANIFEST" 2>/dev/null; then
+  echo "${TODAY}.md|${EMPTY_MD5}" >> "$MANIFEST"
+  MANIFEST_STATUS="added empty-hash entry"
+fi
+
+echo "--- TODAY'S NOTE ---"
+echo "path: $NOTE_REL"
+echo "status: $NOTE_STATUS"
+echo "manifest: $MANIFEST_STATUS"
+echo
+
 echo "Use the following instruction bundle for the updater run:"
 echo
 echo "=== BEGIN OPEN BRAIN UPDATER CONTEXT ==="

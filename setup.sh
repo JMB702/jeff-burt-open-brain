@@ -47,6 +47,63 @@ substitute() {
         "$dst"
 }
 
+# Auto-detect USER_FIRST_NAME from an existing vault's CLAUDE.md.
+# The template line 3 reads: "{{USER_FIRST_NAME}}'s personal knowledge system — ..."
+# which becomes "Jane's personal knowledge system — ..." after substitution.
+# Echoes the name on stdout; empty string if not found.
+detect_first_name() {
+    local vault="$1"
+    [ -f "$vault/CLAUDE.md" ] || { echo ""; return; }
+    head -5 "$vault/CLAUDE.md" \
+        | grep -oE "[A-Za-z]+'s personal knowledge system" \
+        | head -1 \
+        | sed "s/'s personal knowledge system//"
+}
+
+# Replace or append the Open Brain section in ~/.claude/CLAUDE.md.
+# Used during upgrade. Handles both the current heading ("## Open Brain — ...'s knowledge system")
+# and the legacy heading ("## Deep Context — Open Brain"). Backs up before editing.
+# Requires USER_FIRST_NAME and VAULT_PATH to be set.
+replace_or_append_global_section() {
+    local global="$HOME/.claude/CLAUDE.md"
+    local tmp_section="/tmp/ob-global-section.$$.md"
+    local tmp_stripped="/tmp/ob-global-stripped.$$.md"
+
+    mkdir -p "$HOME/.claude"
+    substitute "$SETUP_DIR/templates/claude/global-claude-md-section.md" "$tmp_section"
+
+    if [ ! -f "$global" ]; then
+        cp "$tmp_section" "$global"
+        info "Created ~/.claude/CLAUDE.md with Open Brain section."
+        rm -f "$tmp_section"
+        return
+    fi
+
+    cp "$global" "$global.bak.$(date +%s)"
+
+    if grep -qE "^## Open Brain — |^## Deep Context — Open Brain" "$global"; then
+        # Strip existing section (from its heading until the next `## ` heading or EOF)
+        awk '
+            BEGIN { in_section=0 }
+            /^## Open Brain — / || /^## Deep Context — Open Brain/ { in_section=1; next }
+            in_section && /^## / { in_section=0 }
+            !in_section { print }
+        ' "$global" > "$tmp_stripped"
+
+        # Append the fresh section
+        printf "\n" >> "$tmp_stripped"
+        cat "$tmp_section" >> "$tmp_stripped"
+        mv "$tmp_stripped" "$global"
+        info "Rewrote Open Brain section in ~/.claude/CLAUDE.md."
+    else
+        printf "\n" >> "$global"
+        cat "$tmp_section" >> "$global"
+        info "Appended Open Brain section to ~/.claude/CLAUDE.md."
+    fi
+
+    rm -f "$tmp_section" "$tmp_stripped"
+}
+
 # Strip conditional blocks from a file, keeping only the matching method.
 # Blocks look like:  <!-- IF BRIEFING_METHOD = slack --> ... <!-- END slack -->
 strip_conditionals() {
@@ -284,7 +341,7 @@ PROFILE
     echo "Updating global ~/.claude/CLAUDE.md..."
     mkdir -p "$HOME/.claude"
     if [ -f "$HOME/.claude/CLAUDE.md" ]; then
-        if grep -q "## Deep Context — Open Brain" "$HOME/.claude/CLAUDE.md"; then
+        if grep -qE "^## Open Brain — |^## Deep Context — Open Brain" "$HOME/.claude/CLAUDE.md"; then
             info "Open Brain section already exists — skipping."
         else
             # Ensure newline before appending
@@ -431,6 +488,29 @@ do_upgrade() {
         info "Scheduled task already exists."
     fi
 
+    # Update global ~/.claude/CLAUDE.md Open Brain section
+    echo "Updating global ~/.claude/CLAUDE.md Open Brain section..."
+    detected_name="$(detect_first_name "$vault_path")"
+    if [ -n "$detected_name" ]; then
+        # Set template vars needed by substitute(). Only USER_FIRST_NAME and VAULT_PATH
+        # are referenced by the global section template; others are set to empty
+        # to keep substitute()'s sed calls happy.
+        USER_FIRST_NAME="$detected_name"
+        USER_FULL_NAME="$detected_name"
+        USER_FIRST_NAME_SLUG="$(echo "$detected_name" | tr '[:upper:]' '[:lower:]')"
+        VAULT_PATH="$vault_path"
+        TIMEZONE="${TIMEZONE:-}"
+        SLACK_WORKSPACE="${SLACK_WORKSPACE:-}"
+        SLACK_CHANNEL_ID="${SLACK_CHANNEL_ID:-}"
+        IMESSAGE_RECIPIENT="${IMESSAGE_RECIPIENT:-}"
+        EMAIL_RECIPIENT="${EMAIL_RECIPIENT:-}"
+        info "Detected user first name: $detected_name"
+        replace_or_append_global_section
+    else
+        info "Could not auto-detect user first name from vault CLAUDE.md."
+        info "Skipping global section update. Follow U6 in SETUP-INSTRUCTIONS.md to update manually."
+    fi
+
     # Validate and build index
     echo "Running validation..."
     cd "$vault_path"
@@ -440,25 +520,29 @@ do_upgrade() {
     echo
     echo "=== Upgrade Complete ==="
     echo
-    echo "  Scripts and hooks are up to date."
-    echo "  Entity index regenerated."
+    echo "  Automated updates applied:"
+    echo "    - Scripts and git hooks refreshed"
+    echo "    - Entity index regenerated"
+    if [ -n "$detected_name" ]; then
+        echo "    - Global ~/.claude/CLAUDE.md Open Brain section rewritten"
+    fi
     echo
-    echo "  MANUAL REVIEW NEEDED:"
-    echo "  Your CLAUDE.md and updater files were NOT overwritten (they may have customizations)."
-    echo "  Backups saved as .bak.$ts files."
+    echo "  MANUAL REVIEW NEEDED (files that may have user customizations):"
     echo
-    echo "  Check that your CLAUDE.md includes these sections (add if missing):"
-    echo "    - Entity Index section (after File Locations table)"
-    echo "    - Validation section (after Manifest section)"
-    echo "    - Entity index rows in the File Locations table"
+    echo "  1. Vault CLAUDE.md ($vault_path/CLAUDE.md)"
+    echo "     Compare against templates/vault/CLAUDE.md. Add if missing:"
+    echo "       - Entity Index section (after File Locations table)"
+    echo "       - Validation section (after Manifest section)"
+    echo "       - 'Today's raw note' note under Step 2 of 'How to Find Information'"
+    echo "       - Photos section (if photos integration is enabled)"
     echo
-    echo "  Check that your OPEN BRAIN UPDATER.md includes:"
-    echo "    - Step 2a references entities-index.md (not manual ls/head scanning)"
-    echo "    - Step 2f (Validate Vault Structure) exists after Step 2e"
-    echo "    - Step 4 includes re-running validation"
+    echo "  2. OPEN BRAIN UPDATER.md ($vault_path/OPEN BRAIN UPDATER.md)"
+    echo "     Compare against templates/vault/OPEN-BRAIN-UPDATER.md. Add if missing:"
+    echo "       - Step 2a references entities-index.md (not manual ls/head scanning)"
+    echo "       - Step 2f (Validate Vault Structure) after Step 2e"
+    echo "       - Step 4 includes re-running validation"
     echo
-    echo "  Compare your files against the templates in:"
-    echo "    $SETUP_DIR/templates/vault/"
+    echo "  Backups saved as .bak.$ts files. Templates at $SETUP_DIR/templates/vault/"
     echo
 }
 

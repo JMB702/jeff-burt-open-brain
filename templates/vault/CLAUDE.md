@@ -83,6 +83,8 @@ Once you know the entity name, read the file directly:
 
 Entity files contain every paragraph {{USER_FIRST_NAME}} has written about that topic, in chronological order. This is almost always sufficient — you do not need to read raw daily notes.
 
+**If the topic seems recent**, also check today's raw note at `notes/raw-daily-notes/YYYY/MM-Month/YYYY-MM-DD.md` — the morning updater runs on a schedule, so anything written since hasn't been processed into entities yet.
+
 ### Step 3: Read people profiles
 
 If you need context about a person, read their profile at `people/<slug>.md`. Profiles have:
