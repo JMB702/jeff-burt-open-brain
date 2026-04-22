@@ -173,6 +173,35 @@ This rewrites `Photos/photos-index.json` (gitignored). It has no effect on the b
 **Skip silently on failure.** If the script reports osxphotos isn't installed or Full Disk Access isn't granted, log a one-line warning and proceed to Step 3. Do NOT block the updater on this. {{USER_FIRST_NAME}} can run the setup from `Photos/README.md` on their own time.
 <!-- END PHOTOS_INTEGRATION -->
 
+### 2i. Reconcile Auto-Memory Against Open Brain
+
+Claude Code maintains per-project auto-memory files under:
+```
+~/.claude/projects/<slugified-vault-path>/memory/
+```
+(The slug is the absolute vault path with `/` replaced by `-`, e.g. `-Users-name-Documents-Open-Brain`.)
+
+These memories are point-in-time observations Claude has written about {{USER_FIRST_NAME}}, projects, and preferences. They drift — a project that's been abandoned may still be memorialized as "active," a roadmap from weeks ago may list items that are now done or pivoted away from. **Open Brain — {{USER_FIRST_NAME}}'s daily notes and entity files — is the source of truth. Auto-memory takes a back seat to it.**
+
+Do the following:
+
+1. **Read the index.** Open `memory/MEMORY.md` and list every memory file it points to. Also list any `.md` files in the memory directory that aren't referenced in the index (orphans).
+2. **For each memory file, read it and identify the topic(s) it claims to describe** — e.g., a specific project, a person, a policy, a tool, a decision. Note any concrete claims with a date or status ("shelved," "in progress," "done," file paths, expiration dates, etc.).
+3. **Check Open Brain for the latest ground truth on each topic:**
+   - Use `entities-index.md` to resolve the topic to an entity file.
+   - Read the entity file's tail (recent entries + summary block). If the memory's claim contradicts a more recent entry, Open Brain wins.
+   - For policies / preferences / feedback-type memories, cross-check against the current `CLAUDE.md` and `OPEN BRAIN UPDATER.md`. If the policy has been codified in those files, the memory is redundant.
+   - If the topic isn't tracked as an entity at all, the memory may be genuinely useful auxiliary context — leave it alone unless daily notes clearly contradict it.
+4. **Take action based on confidence:**
+   - **Update** a memory when Open Brain provides a clear, specific correction (e.g., "shelved" → "abandoned," status flag change, new expiration date, outdated file path).
+   - **Delete** a memory when it's fully superseded by Open Brain content, duplicated by `CLAUDE.md`, or describes infrastructure/decisions that have been explicitly abandoned in daily notes.
+   - **Skip and flag** when the contradiction is ambiguous — include a one-line note in the Step 5 briefing under a "Memory drift" section so {{USER_FIRST_NAME}} can decide.
+   - **Add** a new memory only when daily notes reveal a durable preference, feedback, or project-state fact that belongs in auto-memory and isn't already captured. Be conservative — most content belongs in entity files, not auto-memory.
+5. **Keep `MEMORY.md` in sync** with any file deletions/additions. Remove orphaned index lines; add lines for new memories. Each index line stays under ~150 characters.
+6. **Do not invent.** If Open Brain doesn't say something, don't write it into memory. The no-hallucination rule applies here too.
+
+Budget this step to a light sweep on normal runs. A full audit of every memory file against every entity is expensive — prioritize memories whose topic appears in today's (or this run's) newly-processed daily notes, plus any memory that's older than ~14 days and hasn't been checked in a while.
+
 ---
 
 ## Step 3: Trends & Insights
