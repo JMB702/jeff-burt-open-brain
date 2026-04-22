@@ -18,6 +18,16 @@ Photo metadata is sensitive. The index includes GPS for every photo Jeff has tak
 pip3 install osxphotos
 ```
 
+If pip refuses with an `externally-managed-environment` error (PEP 668, common on recent Homebrew Python), pass `--break-system-packages`:
+
+```bash
+pip3 install osxphotos --break-system-packages
+```
+
+This is safe here — Homebrew's Python at `/opt/homebrew/bin/python3` is user-scoped, not system-critical. The flag only relaxes pip's refusal to install into the user site-packages.
+
+**Heads-up on Homebrew Python upgrades.** When Homebrew bumps the `python3` symlink (e.g., 3.13 → 3.14), the new interpreter has an empty site-packages and `osxphotos` vanishes. The updater's preflight (`scripts/run_open_brain_updater.sh`) checks for this and emits a visible warning. If you see that warning, rerun the install command above.
+
 ### 2. Grant Full Disk Access
 
 Apple Photos stores its database in a protected location. Any process that reads it needs Full Disk Access.

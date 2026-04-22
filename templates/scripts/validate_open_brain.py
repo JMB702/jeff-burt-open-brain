@@ -606,6 +606,9 @@ def validate_people_profiles(root: Path) -> list[Finding]:
     return findings
 
 
+_INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+
 def validate_no_leftover_placeholders(root: Path) -> list[Finding]:
     findings: list[Finding] = []
     check_files = [
@@ -616,9 +619,13 @@ def validate_no_leftover_placeholders(root: Path) -> list[Finding]:
         if not path.exists():
             continue
         for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-            if UNFILLED_PLACEHOLDER_RE.search(line):
+            # Strip inline-code spans before scanning. Prose that documents a
+            # placeholder by example (e.g. `{{USER_FIRST_NAME}}`) is not a real
+            # unfilled placeholder and shouldn't fail the build.
+            scannable = _INLINE_CODE_RE.sub("", line)
+            if UNFILLED_PLACEHOLDER_RE.search(scannable):
                 findings.append(Finding("ERROR", path, line_no, "unfilled template placeholder found"))
-            if CONDITIONAL_MARKER_RE.search(line):
+            if CONDITIONAL_MARKER_RE.search(scannable):
                 findings.append(Finding("ERROR", path, line_no, "leftover conditional marker from template"))
     return findings
 

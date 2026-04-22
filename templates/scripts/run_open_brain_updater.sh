@@ -12,6 +12,38 @@ echo
 echo "Preflight passed."
 echo
 
+# Photos pipeline health check — surface stale index or missing osxphotos early.
+# A silent failure here (e.g. Homebrew Python upgrade wiping osxphotos) means
+# the daily index refresh in Step 2h is quietly not happening. We warn loudly
+# so the session can flag it in the briefing instead of letting it sit for weeks.
+PHOTOS_WARN=""
+if ! python3 -c "import osxphotos" >/dev/null 2>&1; then
+  PHOTOS_WARN="osxphotos is not importable by the current python3 ($(python3 --version 2>&1)). Step 2h will skip the index refresh silently. Fix: pip3 install osxphotos --break-system-packages (see Photos/README.md)."
+elif [ -f "Photos/photos-index.json" ]; then
+  AGE_HOURS=$(python3 -c "
+import json
+from datetime import datetime
+try:
+    d = json.load(open('Photos/photos-index.json'))
+    gen = datetime.fromisoformat(d['generated_at'])
+    age = (datetime.now(gen.tzinfo) - gen).total_seconds() / 3600
+    print(int(age))
+except Exception:
+    print(-1)
+" 2>/dev/null)
+  if [ "$AGE_HOURS" -gt 36 ] 2>/dev/null; then
+    PHOTOS_WARN="Photos index is ${AGE_HOURS} hours old — Step 2h should refresh it every ~24h but hasn't. Investigate: run 'python3 scripts/photos_update_index.py --verbose' and check for errors."
+  fi
+fi
+
+if [ -n "$PHOTOS_WARN" ]; then
+  echo "!!! PHOTOS PIPELINE WARNING !!!"
+  echo "$PHOTOS_WARN"
+  echo "Include this warning in the Slack briefing so {{USER_FIRST_NAME}} sees it."
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo
+fi
+
 # Ensure today's blank daily note exists (idempotent).
 # The model doesn't need to remember this — the preflight handles it.
 TODAY=$(date +%Y-%m-%d)

@@ -170,7 +170,9 @@ python3 scripts/photos_update_index.py
 
 This rewrites `Photos/photos-index.json` (gitignored). It has no effect on the briefing itself — it's infrastructure.
 
-**Skip silently on failure.** If the script reports osxphotos isn't installed or Full Disk Access isn't granted, log a one-line warning and proceed to Step 3. Do NOT block the updater on this. {{USER_FIRST_NAME}} can run the setup from `Photos/README.md` on their own time.
+**Do not block the updater on failure.** If the script reports osxphotos isn't installed or Full Disk Access isn't granted, log the error output and proceed to Step 3.
+
+**But surface it in the briefing.** The preflight emits a `!!! PHOTOS PIPELINE WARNING !!!` block at the top of the bundle when osxphotos is missing or the index is stale (>36h old). If you saw that block at the start of this run, OR if the Step 2h refresh failed, include a one-line entry in the Slack briefing under a "System health" note (e.g., "Photos pipeline: osxphotos not importable — index has not refreshed since {generated_at}. Fix with `pip3 install osxphotos --break-system-packages`."). Do not let this sit silently across runs.
 <!-- END PHOTOS_INTEGRATION -->
 
 ### 2i. Reconcile Auto-Memory Against Open Brain
