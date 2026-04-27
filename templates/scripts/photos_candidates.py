@@ -3,7 +3,7 @@
 Rank photo candidates for a date range using Apple's own ML signals.
 
 Filters and ranks the photos-index.json records so Claude can pick a handful
-worth looking at (with vision, or just reporting to Jeff) instead of
+worth looking at (with vision, or just reporting to the user) instead of
 skimming hundreds.
 
 Uses:
@@ -13,7 +13,7 @@ Uses:
 - bodies_of_water / venues / neighborhoods / place_name for location filtering
 - burst grouping to collapse burst sequences to one keeper
 - Temporal + GPS clustering to collapse "5 near-identical snaps" to one
-- Jeff's favorite flag as the strongest single boost
+- {{USER_FIRST_NAME}}'s favorite flag as the strongest single boost
 
 Usage:
   python3 scripts/photos_candidates.py 2026-03-22

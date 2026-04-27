@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Query Jeff's Apple Photos library for a given date or date range.
+Query {{USER_FIRST_NAME}}'s Apple Photos library for a given date or date range.
 
 Reads from Photos/photos-index.json by default (fast, no osxphotos needed).
 Use --live to bypass the cache and query osxphotos directly against the

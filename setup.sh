@@ -284,13 +284,17 @@ do_install() {
         mkdir -p "$VAULT_PATH/Photos"
         mkdir -p "$VAULT_PATH/.claude/skills/what-did-i-see"
         mkdir -p "$VAULT_PATH/.claude/skills/photos-for-event"
-        cp "$SETUP_DIR/templates/scripts/photos_"*.py "$VAULT_PATH/scripts/"
+        # photos_*.py contain {{USER_FIRST_NAME}} placeholders in their
+        # docstrings — substitute() instead of cp().
+        for f in "$SETUP_DIR/templates/scripts/photos_"*.py; do
+            substitute "$f" "$VAULT_PATH/scripts/$(basename "$f")"
+        done
         chmod +x "$VAULT_PATH/scripts/photos_"*.py
-        cp "$SETUP_DIR/templates/claude/skills/what-did-i-see/SKILL.md" \
-           "$VAULT_PATH/.claude/skills/what-did-i-see/SKILL.md"
-        cp "$SETUP_DIR/templates/claude/skills/photos-for-event/SKILL.md" \
-           "$VAULT_PATH/.claude/skills/photos-for-event/SKILL.md"
-        cp "$SETUP_DIR/templates/vault/Photos/README.md" "$VAULT_PATH/Photos/README.md"
+        substitute "$SETUP_DIR/templates/claude/skills/what-did-i-see/SKILL.md" \
+            "$VAULT_PATH/.claude/skills/what-did-i-see/SKILL.md"
+        substitute "$SETUP_DIR/templates/claude/skills/photos-for-event/SKILL.md" \
+            "$VAULT_PATH/.claude/skills/photos-for-event/SKILL.md"
+        substitute "$SETUP_DIR/templates/vault/Photos/README.md" "$VAULT_PATH/Photos/README.md"
         if [ "$PHOTOS_INTEGRATION" = "adapt" ]; then
             cp "$SETUP_DIR/templates/vault/Photos/WINDOWS-ADAPTATION.md" \
                "$VAULT_PATH/Photos/WINDOWS-ADAPTATION.md"

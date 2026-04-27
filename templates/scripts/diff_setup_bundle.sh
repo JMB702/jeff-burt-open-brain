@@ -1,7 +1,7 @@
 #!/bin/sh
 # Compare every file in the setup bundle (`Open brain set up/templates/`) to its
-# counterpart in the live vault / home config. Print drift so Jeff can see what
-# changes haven't been synced to the public setup bundle yet.
+# counterpart in the live vault / home config. Print drift so the vault owner
+# can see what changes haven't been synced to the public setup bundle yet.
 #
 # Mappings:
 #   templates/vault/OPEN-BRAIN-UPDATER.md  -> <VAULT>/OPEN BRAIN UPDATER.md  (hyphen -> space)

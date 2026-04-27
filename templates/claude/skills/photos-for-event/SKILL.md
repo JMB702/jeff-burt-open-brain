@@ -1,12 +1,12 @@
 ---
 name: photos-for-event
-description: "Find photos in Jeff's Apple Photos library that match an Open Brain entity (event, project, or other entity) by date — and by GPS radius when coordinates are supplied. Triggers on phrases like 'photos from the X event', 'any pictures from X', 'photos of X project', 'find photos tied to X'. Metadata-only by default; defers to the Vision policy for any pixel analysis."
+description: "Find photos in {{USER_FIRST_NAME}}'s Apple Photos library that match an Open Brain entity (event, project, or other entity) by date — and by GPS radius when coordinates are supplied. Triggers on phrases like 'photos from the X event', 'any pictures from X', 'photos of X project', 'find photos tied to X'. Metadata-only by default; defers to the Vision policy for any pixel analysis."
 user-invocable: true
 ---
 
 # /photos-for-event — Match Photos to Entities by Date (and Optionally GPS)
 
-You are finding which photos in Jeff's library relate to a specific Open Brain entity — an event, project, medical condition, or other entity file. This is a **metadata-only** skill by default.
+You are finding which photos in {{USER_FIRST_NAME}}'s library relate to a specific Open Brain entity — an event, project, medical condition, or other entity file. This is a **metadata-only** skill by default.
 
 ## Step 1: Resolve the entity
 
@@ -19,7 +19,7 @@ The user will name the entity informally ("the April AI workgroup," "DEC Expo," 
    - Other Entities → `Other Entities/<Name>.md`
    - Medical → `Medical/<Name>.md`
 
-If the entity name is ambiguous, ask which one Jeff means before continuing.
+If the entity name is ambiguous, ask which one {{USER_FIRST_NAME}} means before continuing.
 
 ## Step 2: Run the resolver
 
@@ -30,15 +30,15 @@ python3 scripts/photos_for_entity.py "<entity-file.md>" [--date-fuzz-days N] [--
 The script reads the entity's YAML frontmatter. Behavior:
 
 - **Events:** uses the `date` field, padded by `--date-fuzz-days` (default 1) on each side. So an event on 2026-04-18 returns photos from 2026-04-17 through 2026-04-19.
-- **Projects / Other / Medical:** uses `first_mention` and `last_entry_date` to form the window, padded by fuzz days. For long-running projects this can be months of photos — prefer `--summary` in a follow-up query, or ask Jeff for a narrower date range.
+- **Projects / Other / Medical:** uses `first_mention` and `last_entry_date` to form the window, padded by fuzz days. For long-running projects this can be months of photos — prefer `--summary` in a follow-up query, or ask {{USER_FIRST_NAME}} for a narrower date range.
 
-Entity `location` is free text (e.g., "Zoom", "Tampa, FL") and doesn't carry lat/lng. If Jeff has specific GPS coordinates in mind — or the entity happened at a known place — pass `--lat`, `--lng`, and `--radius-km` to the script for a tighter filter. Without those, matching is date-only.
+Entity `location` is free text (e.g., "Zoom", "Tampa, FL") and doesn't carry lat/lng. If {{USER_FIRST_NAME}} has specific GPS coordinates in mind — or the entity happened at a known place — pass `--lat`, `--lng`, and `--radius-km` to the script for a tighter filter. Without those, matching is date-only.
 
 ## Step 3: Present candidates from metadata
 
-Report the photos the script returned. Each line will have UUID, timestamp, GPS, macOS Places name, albums, face-cluster persons, filename. That is almost always enough to answer "did Jeff take photos at this event."
+Report the photos the script returned. Each line will have UUID, timestamp, GPS, macOS Places name, albums, face-cluster persons, filename. That is almost always enough to answer "did {{USER_FIRST_NAME}} take photos at this event."
 
-Do **not** invent what's in the photos from filenames. `IMG_2041.HEIC` at the right time and place is a **candidate** for the event — not proof Jeff photographed the event itself. Say "3 candidate photos match the date and location" rather than "3 photos from the event."
+Do **not** invent what's in the photos from filenames. `IMG_2041.HEIC` at the right time and place is a **candidate** for the event — not proof {{USER_FIRST_NAME}} photographed the event itself. Say "3 candidate photos match the date and location" rather than "3 photos from the event."
 
 Also correlate with:
 - The entity file's own verbatim paragraph entries (`## YYYY-MM-DD` sections).
@@ -62,8 +62,8 @@ Present the ranked set instead of the full candidate list. See `.claude/skills/w
 Opening a photo's pixels is **expensive and slow** — and is the job of `/what-did-i-see`, not this skill. The full rubric lives in `.claude/skills/what-did-i-see/SKILL.md`. Short version:
 
 - **Default:** metadata only. No `photos_export.py` calls.
-- **If Jeff asks to verify a specific candidate** ("is the whiteboard in `<uuid>` from the orientation meeting?"): announce the UUID, run `photos_export.py`, Read the result. One photo.
-- **If Jeff asks to verify many candidates at once:** refuse to batch. Propose one to start with.
+- **If {{USER_FIRST_NAME}} asks to verify a specific candidate** ("is the whiteboard in `<uuid>` from the orientation meeting?"): announce the UUID, run `photos_export.py`, Read the result. One photo.
+- **If {{USER_FIRST_NAME}} asks to verify many candidates at once:** refuse to batch. Propose one to start with.
 - **If no photo with pixel content is requested:** stop at metadata.
 
 ## Example flows
@@ -71,7 +71,7 @@ Opening a photo's pixels is **expensive and slow** — and is the job of `/what-
 **Event with clear date match:**
 
 ```
-Jeff: Any photos from the AI Workgroup on the 18th?
+{{USER_FIRST_NAME}}: Any photos from the AI Workgroup on the 18th?
 You: [reads entities-index.md, finds events/AI Workgroup 2026-04-18.md]
      [runs] python3 scripts/photos_for_entity.py "events/AI Workgroup 2026-04-18.md"
 You: 2 candidates match 2026-04-17 through 2026-04-19:
@@ -84,7 +84,7 @@ You: 2 candidates match 2026-04-17 through 2026-04-19:
 **Long-running project — narrow first:**
 
 ```
-Jeff: Find all the photos tied to the Garden project.
+{{USER_FIRST_NAME}}: Find all the photos tied to the Garden project.
 You: [reads entities-index.md → Other Entities/Garden.md]
      The Garden entity spans 2025-09-10 → 2026-04-12. That's hundreds of
      candidate photos. Want me to:
@@ -96,7 +96,7 @@ You: [reads entities-index.md → Other Entities/Garden.md]
 **Explicit pixel verification (edge into vision policy):**
 
 ```
-Jeff: Is the whiteboard in <uuid> from the orientation?
+{{USER_FIRST_NAME}}: Is the whiteboard in <uuid> from the orientation?
 You: Opening <uuid> to check.
      [runs] python3 scripts/photos_export.py <uuid>
      [reads the exported file]
@@ -107,5 +107,5 @@ You: Opening <uuid> to check.
 ## Handle "no candidates"
 
 - If the script returns zero matches, say so plainly. Suggest widening `--date-fuzz-days` or checking whether photos were taken on a different device.
-- If `photos-index.json` is missing, ask Jeff to run `python3 scripts/photos_update_index.py`.
-- If the entity has no date fields (`date`, `first_mention`, `last_entry_date`), the resolver errors out. Tell Jeff which field is missing and suggest adding it to the frontmatter.
+- If `photos-index.json` is missing, ask {{USER_FIRST_NAME}} to run `python3 scripts/photos_update_index.py`.
+- If the entity has no date fields (`date`, `first_mention`, `last_entry_date`), the resolver errors out. Tell {{USER_FIRST_NAME}} which field is missing and suggest adding it to the frontmatter.

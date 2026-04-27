@@ -52,6 +52,28 @@ This command:
 
 This is useful for scheduled tasks and for any agent session that should start from the same preflighted updater context.
 
+### Note Processing Dry Run
+
+Before Claude Code edits the vault for a pending daily or historical note, generate a deterministic ingestion report:
+
+```bash
+python3 scripts/process_note.py notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md
+```
+
+Machine-readable output:
+
+```bash
+python3 scripts/process_note.py <note-path> --json
+```
+
+Write the JSON report to a file without editing vault content:
+
+```bash
+python3 scripts/process_note.py <note-path> --output tmp/process-note-report.json
+```
+
+The report includes paragraph indexes, direct entity/person alias matches, likely entity appends, duplicate warnings, unmatched paragraphs, manifest status, and a preview of the `tmp/run-delta.json` shape. It is dry-run only. Claude Code still owns indirect reasoning and final writes.
+
 ### Operator Workflow
 
 The standard operator flow is:

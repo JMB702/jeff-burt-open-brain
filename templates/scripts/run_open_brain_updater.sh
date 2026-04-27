@@ -96,7 +96,11 @@ echo
 echo "--- DORMANT ENTITIES ---"
 python3 scripts/list_dormant.py
 echo
-echo "Tip: per-paragraph alias shortlists are available via:"
+echo "Tip: for each pending note, start with the dry-run ingestion report:"
+echo "  python3 scripts/process_note.py <note-path>"
+echo "It bundles the alias shortlist with manifest status, duplicate checks,"
+echo "unmatched paragraphs, and a run-delta preview. For just the raw alias"
+echo "shortlist (smaller context), use:"
 echo "  python3 scripts/match_entities.py <note-path> --pretty"
 echo
 echo "=== END OPEN BRAIN UPDATER CONTEXT ==="

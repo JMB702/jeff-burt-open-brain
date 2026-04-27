@@ -32,10 +32,10 @@ Your backend must produce a JSON file with this shape. Fields in **bold** are re
       "taken_at": "2026-03-22T17:45:33-04:00",  // ISO 8601 local time
       "lat": 27.300505,                         // float or null
       "lng": -82.56543,                         // float or null
-      "place_name": "City Island, Sarasota, Florida",  // string or null
+      "place_name": "Some Park, Some City, Some State",  // string or null
       "albums": ["Trip 2026"],
       "keywords": [],
-      "persons": ["Jeff Burt"],                 // face-cluster names or []
+      "persons": ["Person Name"],               // face-cluster names or []
       "favorite": true,
       "screenshot": false,
       "ismovie": false,

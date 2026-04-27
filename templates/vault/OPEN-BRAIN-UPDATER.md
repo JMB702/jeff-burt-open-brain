@@ -39,6 +39,18 @@ If you want the pending list in JSON form while reasoning about edits:
 python3 scripts/notes_to_process.py --json
 ```
 
+For each note needing processing, start with the dry-run ingestion report:
+```bash
+python3 scripts/process_note.py notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md
+```
+
+For historical notes, pass the historical note path instead. The report is a deterministic checklist for Claude Code: paragraph indexes, direct entity/person alias matches, likely entity appends, duplicate warnings, unmatched paragraphs, manifest status, and a preview of the `tmp/run-delta.json` shape. It is **dry-run only** and does not edit the vault. Claude Code still owns the reasoning and final writes: indirect references, new aliases/entities, wiki links, verbatim appends, people profile updates, manifest updates, summaries, Slack briefing, and commits.
+
+If you want the report in JSON, use:
+```bash
+python3 scripts/process_note.py notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md --json
+```
+
 When reprocessing a modified note, read the entity files that already have entries for that date and compare against the current note content. **Think through what's new vs. what was already captured** — only append genuinely new paragraphs, don't duplicate content from a prior run. {{USER_FIRST_NAME}} often adds to a note throughout the day, so the new content is typically at the end.
 
 After processing a note, update `notes/.manifest` with the current MD5 hash (replace the old line or add a new one). Historical notes may be organized in year subdirectories (`notes/historical-notes/YYYY/YYYY-MM-DD.md`) but the manifest stores them by basename only — same as daily notes.
@@ -61,15 +73,17 @@ If you create a new entity during this run, add it to your working alias map imm
 
 ### 2b. Process Each Note Paragraph-by-Paragraph
 
-For each note needing processing, start by generating a per-paragraph alias shortlist:
+For each note needing processing, start from the `process_note.py` report. It already uses the same direct alias matcher as `match_entities.py`, checks likely duplicate appends, and highlights unmatched paragraphs for review.
+
+If you need the raw per-paragraph alias shortlist without the extra manifest/duplicate/run-delta context, run:
 ```bash
 python3 scripts/match_entities.py notes/raw-daily-notes/YYYY/MM-MonthName/YYYY-MM-DD.md --pretty
 ```
-This returns, for every paragraph, the entities and people whose filename or alias appears in the paragraph text (case-insensitive, whole-word). It is **advisory** — the regex catches direct and alias matches only, not indirect references. Still read every paragraph.
+Both scripts are **advisory** — the regex catches direct and alias matches only, not indirect references. Still read every paragraph.
 
 Then work through the note **one paragraph at a time**. For each paragraph:
 
-1. **Start from the shortlist.** Every candidate in `candidate_entities` and `candidate_people` is a confirmed direct/alias match — those become wiki links and entity appends.
+1. **Start from the report.** Every candidate in `candidate_entities` and `candidate_people` is a confirmed direct/alias match — those will usually become wiki links and entity appends unless Claude Code identifies a false-positive alias match or duplicate.
 2. **Then reason about what the shortlist missed.** Don't skim — {{USER_FIRST_NAME}} often buries entity references in the middle or end of a paragraph. Specifically look for:
    - **Indirect references** — {{USER_FIRST_NAME}} describes working on something without naming it. The pre-matcher cannot catch these.
    - **Medical references** without the condition name (e.g., medication or equipment names → the relevant Medical file).

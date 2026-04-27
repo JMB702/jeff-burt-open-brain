@@ -120,6 +120,14 @@ sh scripts/run_open_brain_updater.sh
 
 This preflights the vault with structural validation, then prints the updater instruction bundle.
 
+When the updater processes pending notes, use the dry-run helper first:
+
+```bash
+python3 scripts/process_note.py <note-path>
+```
+
+This produces a deterministic report for Claude Code: paragraph indexes, direct entity/person matches, likely appends, duplicate warnings, unmatched paragraphs, manifest status, and a run-delta preview. It is an aid for the Claude Code updater routine, not a replacement for it; Claude Code still reads every paragraph, catches indirect references, and performs the final vault edits.
+
 ## What the AI Can Write
 
 - **Daily notes** (`notes/raw-daily-notes/`): **read-only** — add `[[wiki links]]` only, never edit {{USER_FIRST_NAME}}'s words

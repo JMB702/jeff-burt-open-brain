@@ -1,6 +1,6 @@
 Apple Photos metadata integration for Open Brain.
 
-This directory holds a **local-only** JSON cache of metadata from Jeff's Apple Photos library. The cache lets Claude answer questions about when/where photos were taken, who is in them, and what albums/keywords they carry — without touching the pixels.
+This directory holds a **local-only** JSON cache of metadata from {{USER_FIRST_NAME}}'s Apple Photos library. The cache lets Claude answer questions about when/where photos were taken, who is in them, and what albums/keywords they carry — without touching the pixels.
 
 ## Files
 
@@ -8,7 +8,7 @@ This directory holds a **local-only** JSON cache of metadata from Jeff's Apple P
 
 ## Why gitignored
 
-Photo metadata is sensitive. The index includes GPS for every photo Jeff has taken. Even if this repo stays private, the Open Brain pattern is a prototype for systems built for Eos Automations clients — personal data never belongs in git. Same rule as `Location History/archive/`.
+Photo metadata is sensitive. The index includes GPS for every photo in your library. Even if this repo stays private, personal data never belongs in git. Same rule as any other local-only sensitive data (e.g. location history archives).
 
 ## Prerequisites (one-time setup)
 
@@ -129,7 +129,7 @@ The full rubric lives in [`.claude/skills/what-did-i-see/SKILL.md`](../.claude/s
 - **"Optimize Mac Storage"** — if enabled (Photos settings), some originals live only in iCloud. `photos_export.py` falls back to a local preview when the original isn't on disk. Preview is ~1 MB and fine for most vision tasks; request `--size original` only for OCR of small text.
 - **Library-in-flight** — if Photos.app is actively importing, the SQLite database may be locked or mid-write. Just rerun the script.
 - **macOS upgrades** occasionally change the Photos DB schema. osxphotos tracks this, but a major macOS bump may need `pip3 install -U osxphotos`.
-- **Screenshots are included.** They have `screenshot: true` in the JSON. Skills note this so a UI screenshot isn't treated as "Jeff was at a real location."
+- **Screenshots are included.** They have `screenshot: true` in the JSON. Skills note this so a UI screenshot isn't treated as "the user was at a real location."
 - **Hidden + Recently Deleted are excluded** from the index by default. There is no flag to include them — that was the design choice.
 
 ## Privacy note on `detected_text`
